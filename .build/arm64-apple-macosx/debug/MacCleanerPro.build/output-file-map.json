@@ -1,0 +1,145 @@
+{
+  "": {
+    "swift-dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/master.swiftdeps"
+  },
+  "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/Sources/MacCleanerPro/AppMain.swift": {
+    "dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/AppMain.d",
+    "object": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/AppMain.swift.o",
+    "swiftmodule": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/AppMain~partial.swiftmodule",
+    "swift-dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/AppMain.swiftdeps",
+    "diagnostics": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/AppMain.dia"
+  },
+  "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/Sources/MacCleanerPro/Helper/HelperProtocol.swift": {
+    "dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/HelperProtocol.d",
+    "object": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/HelperProtocol.swift.o",
+    "swiftmodule": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/HelperProtocol~partial.swiftmodule",
+    "swift-dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/HelperProtocol.swiftdeps",
+    "diagnostics": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/HelperProtocol.dia"
+  },
+  "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/Sources/MacCleanerPro/Helper/HelperTool.swift": {
+    "dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/HelperTool.d",
+    "object": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/HelperTool.swift.o",
+    "swiftmodule": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/HelperTool~partial.swiftmodule",
+    "swift-dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/HelperTool.swiftdeps",
+    "diagnostics": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/HelperTool.dia"
+  },
+  "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/Sources/MacCleanerPro/Models/AppModel.swift": {
+    "dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/AppModel.d",
+    "object": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/AppModel.swift.o",
+    "swiftmodule": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/AppModel~partial.swiftmodule",
+    "swift-dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/AppModel.swiftdeps",
+    "diagnostics": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/AppModel.dia"
+  },
+  "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/Sources/MacCleanerPro/Models/CleanupCategory.swift": {
+    "dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/CleanupCategory.d",
+    "object": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/CleanupCategory.swift.o",
+    "swiftmodule": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/CleanupCategory~partial.swiftmodule",
+    "swift-dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/CleanupCategory.swiftdeps",
+    "diagnostics": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/CleanupCategory.dia"
+  },
+  "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/Sources/MacCleanerPro/Models/ScanResult.swift": {
+    "dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/ScanResult.d",
+    "object": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/ScanResult.swift.o",
+    "swiftmodule": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/ScanResult~partial.swiftmodule",
+    "swift-dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/ScanResult.swiftdeps",
+    "diagnostics": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/ScanResult.dia"
+  },
+  "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/Sources/MacCleanerPro/Models/SystemMetric.swift": {
+    "dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/SystemMetric.d",
+    "object": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/SystemMetric.swift.o",
+    "swiftmodule": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/SystemMetric~partial.swiftmodule",
+    "swift-dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/SystemMetric.swiftdeps",
+    "diagnostics": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/SystemMetric.dia"
+  },
+  "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/Sources/MacCleanerPro/Services/CleanerService.swift": {
+    "dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/CleanerService.d",
+    "object": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/CleanerService.swift.o",
+    "swiftmodule": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/CleanerService~partial.swiftmodule",
+    "swift-dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/CleanerService.swiftdeps",
+    "diagnostics": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/CleanerService.dia"
+  },
+  "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/Sources/MacCleanerPro/Services/PermissionManager.swift": {
+    "dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/PermissionManager.d",
+    "object": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/PermissionManager.swift.o",
+    "swiftmodule": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/PermissionManager~partial.swiftmodule",
+    "swift-dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/PermissionManager.swiftdeps",
+    "diagnostics": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/PermissionManager.dia"
+  },
+  "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/Sources/MacCleanerPro/Services/SafetyManager.swift": {
+    "dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/SafetyManager.d",
+    "object": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/SafetyManager.swift.o",
+    "swiftmodule": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/SafetyManager~partial.swiftmodule",
+    "swift-dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/SafetyManager.swiftdeps",
+    "diagnostics": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/SafetyManager.dia"
+  },
+  "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/Sources/MacCleanerPro/Services/ScannerService.swift": {
+    "dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/ScannerService.d",
+    "object": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/ScannerService.swift.o",
+    "swiftmodule": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/ScannerService~partial.swiftmodule",
+    "swift-dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/ScannerService.swiftdeps",
+    "diagnostics": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/ScannerService.dia"
+  },
+  "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/Sources/MacCleanerPro/Services/SystemMetricsService.swift": {
+    "dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/SystemMetricsService.d",
+    "object": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/SystemMetricsService.swift.o",
+    "swiftmodule": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/SystemMetricsService~partial.swiftmodule",
+    "swift-dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/SystemMetricsService.swiftdeps",
+    "diagnostics": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/SystemMetricsService.dia"
+  },
+  "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/Sources/MacCleanerPro/Views/DashboardView.swift": {
+    "dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/DashboardView.d",
+    "object": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/DashboardView.swift.o",
+    "swiftmodule": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/DashboardView~partial.swiftmodule",
+    "swift-dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/DashboardView.swiftdeps",
+    "diagnostics": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/DashboardView.dia"
+  },
+  "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/Sources/MacCleanerPro/Views/FuturisticTheme.swift": {
+    "dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/FuturisticTheme.d",
+    "object": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/FuturisticTheme.swift.o",
+    "swiftmodule": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/FuturisticTheme~partial.swiftmodule",
+    "swift-dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/FuturisticTheme.swiftdeps",
+    "diagnostics": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/FuturisticTheme.dia"
+  },
+  "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/Sources/MacCleanerPro/Views/GlitchDivider.swift": {
+    "dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/GlitchDivider.d",
+    "object": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/GlitchDivider.swift.o",
+    "swiftmodule": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/GlitchDivider~partial.swiftmodule",
+    "swift-dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/GlitchDivider.swiftdeps",
+    "diagnostics": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/GlitchDivider.dia"
+  },
+  "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/Sources/MacCleanerPro/Views/MatrixRainView.swift": {
+    "dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/MatrixRainView.d",
+    "object": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/MatrixRainView.swift.o",
+    "swiftmodule": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/MatrixRainView~partial.swiftmodule",
+    "swift-dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/MatrixRainView.swiftdeps",
+    "diagnostics": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/MatrixRainView.dia"
+  },
+  "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/Sources/MacCleanerPro/Views/MatrixScanAnimation.swift": {
+    "dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/MatrixScanAnimation.d",
+    "object": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/MatrixScanAnimation.swift.o",
+    "swiftmodule": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/MatrixScanAnimation~partial.swiftmodule",
+    "swift-dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/MatrixScanAnimation.swiftdeps",
+    "diagnostics": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/MatrixScanAnimation.dia"
+  },
+  "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/Sources/MacCleanerPro/Views/ScanResultsView.swift": {
+    "dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/ScanResultsView.d",
+    "object": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/ScanResultsView.swift.o",
+    "swiftmodule": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/ScanResultsView~partial.swiftmodule",
+    "swift-dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/ScanResultsView.swiftdeps",
+    "diagnostics": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/ScanResultsView.dia"
+  },
+  "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/Sources/MacCleanerPro/Views/SystemMetricsView.swift": {
+    "dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/SystemMetricsView.d",
+    "object": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/SystemMetricsView.swift.o",
+    "swiftmodule": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/SystemMetricsView~partial.swiftmodule",
+    "swift-dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/SystemMetricsView.swiftdeps",
+    "diagnostics": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/SystemMetricsView.dia"
+  },
+  "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/DerivedSources/resource_bundle_accessor.swift": {
+    "dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/resource_bundle_accessor.d",
+    "object": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/resource_bundle_accessor.swift.o",
+    "swiftmodule": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/resource_bundle_accessor~partial.swiftmodule",
+    "swift-dependencies": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/resource_bundle_accessor.swiftdeps",
+    "diagnostics": "/Users/mehmet/Desktop/Ruan Cleaner/MacCleanerPro/.build/arm64-apple-macosx/debug/MacCleanerPro.build/resource_bundle_accessor.dia"
+  }
+}
