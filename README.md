@@ -242,7 +242,7 @@ Please feel free to open issues or pull requests on GitHub.
 
 ## License
 
-Ruan Cleaner is free and open source software. See LICENSE file for details.
+Ruan Cleaner is free and open source software.
 
 ---
 
@@ -256,4 +256,4 @@ If you encounter issues:
 ---
 
 **Made with ❤️ for the macOS community. Keep your Mac clean, safe, and fast.**
-```
+
