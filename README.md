@@ -1,4 +1,4 @@
-```markdown
+
 # Ruan Cleaner
 
 A safe, fast, and transparent macOS cleaner that helps you reclaim disk space by finding and removing system junk, caches, logs, duplicates, and temporary files—without ever compromising your system integrity or personal data.
