@@ -9,7 +9,7 @@ struct MacCleanerProApp: App {
         WindowGroup {
             NavigationView {
                 DashboardView()
-                MatrixRainView()
+                MatrixRainView(intensity: 0.4)
             }
             .environmentObject(appModel)
             .onAppear {

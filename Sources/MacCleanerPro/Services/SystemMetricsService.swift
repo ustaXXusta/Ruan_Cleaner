@@ -1,21 +1,27 @@
 import Foundation
 import SwiftUI
 import IOKit.ps
+import Darwin
 
+/// Live system numbers for the sidebar. All values are real readings
+/// (the old version showed random numbers for CPU, disk I/O and network).
 @MainActor
-class SystemMetricsService: ObservableObject {
+final class SystemMetricsService: ObservableObject {
     @Published var metrics: [SystemMetric] = []
     private var timer: Timer?
-    
+
+    // Previous readings, used to turn counters into rates.
+    private var lastCPUTicks: (busy: UInt64, total: UInt64)?
+    private var lastNetwork: (received: UInt64, sent: UInt64, time: Date)?
+
     init() {
-        // Initialize with default values
         metrics = SystemMetricType.allCases.map { type in
-            SystemMetric(type: type, value: "Loading...", detail: "Initializing", percentage: 0.0, status: .unknown)
+            SystemMetric(type: type, value: "…", detail: "Reading", percentage: 0.0, status: .unknown)
         }
-        startMonitoring()
     }
-    
+
     func startMonitoring() {
+        guard timer == nil else { return }   // the view's onAppear used to start a second timer
         updateMetrics()
         timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
@@ -23,258 +29,215 @@ class SystemMetricsService: ObservableObject {
             }
         }
     }
-    
+
     func stopMonitoring() {
         timer?.invalidate()
         timer = nil
     }
-    
+
     private func updateMetrics() {
-        var newMetrics: [SystemMetric] = []
-        
-        // 1. Battery Health
-        newMetrics.append(getBatteryMetric())
-        
-        // 2. CPU Efficiency
-        newMetrics.append(getCPUMetric())
-        
-        // 3. RAM Performance
-        newMetrics.append(getRAMMetric())
-        
-        // 4. Storage I/O
-        newMetrics.append(getStorageMetric())
-        
-        // 5. Network Usage
-        newMetrics.append(getNetworkMetric())
-        
-        // 6. Thermal Status
-        newMetrics.append(getThermalMetric())
-        
-        self.metrics = newMetrics
+        metrics = [
+            getBatteryMetric(),
+            getCPUMetric(),
+            getRAMMetric(),
+            getStorageMetric(),
+            getNetworkMetric(),
+            getThermalMetric()
+        ]
     }
-    
-    // MARK: - Metric Gatherers
-    
+
+    // MARK: - Battery
+
     private func getBatteryMetric() -> SystemMetric {
-        // macOS specific battery info using IOKit (simplified via ProcessInfo/generic for now as direct IOKit in Swift can be complex without bridging)
-        // For a cleaner app, we can use `pmset -g batt` or similar if needed, but let's try a simpler approach or mock if restricted.
-        // Actually, we can use IOKit.ps (IOPSCopyPowerSourcesInfo)
-        
-        var capacity = 100
-        var isCharging = false
-        var status: MetricStatus = .good
-        
         let snapshot = IOPSCopyPowerSourcesInfo()?.takeRetainedValue()
         let sources = IOPSCopyPowerSourcesList(snapshot)?.takeRetainedValue() as? [CFTypeRef] ?? []
-        
-        if let source = sources.first {
-            let info = IOPSGetPowerSourceDescription(snapshot, source)?.takeUnretainedValue() as? [String: Any]
-            
-            if let currentCap = info?[kIOPSCurrentCapacityKey] as? Int,
-               let maxCap = info?[kIOPSMaxCapacityKey] as? Int {
-                capacity = Int((Double(currentCap) / Double(maxCap)) * 100)
-            }
-            
-            if let charging = info?[kIOPSIsChargingKey] as? Bool {
-                isCharging = charging
-            }
+
+        guard let source = sources.first,
+              let info = IOPSGetPowerSourceDescription(snapshot, source)?.takeUnretainedValue() as? [String: Any],
+              let current = info[kIOPSCurrentCapacityKey] as? Int,
+              let maxCapacity = info[kIOPSMaxCapacityKey] as? Int, maxCapacity > 0 else {
+            return SystemMetric(type: .battery, value: "AC", detail: "No battery", percentage: 1.0, status: .good)
         }
-        
+
+        let capacity = Int(Double(current) / Double(maxCapacity) * 100)
+        let charging = info[kIOPSIsChargingKey] as? Bool ?? false
+        let onAC = (info[kIOPSPowerSourceStateKey] as? String) == kIOPSACPowerValue
+
+        var status: MetricStatus = .good
         if capacity < 50 { status = .warning }
         if capacity < 20 { status = .critical }
-        
+
         return SystemMetric(
             type: .battery,
             value: "\(capacity)%",
-            detail: isCharging ? "Charging" : "On Battery",
+            detail: charging ? "Charging" : (onAC ? "On power adapter" : "On battery"),
             percentage: Double(capacity) / 100.0,
             status: status
         )
     }
-    
-    private func getCPUMetric() -> SystemMetric {
-        // Get CPU Load
-        var load: Double = 0.0
-        var kr: kern_return_t
-        var count: mach_msg_type_number_t = 0
-        var info: processor_info_array_t?
-        
-        var cpuLoadInfo = processor_cpu_load_info_data_t()
-        count = mach_msg_type_number_t(MemoryLayout<processor_cpu_load_info_data_t>.size / MemoryLayout<integer_t>.size)
-        
-        // This is a simplified mock-up of load calculation as real-time CPU load in Swift requires diffing previous states.
-        // For this demo, we'll simulate a realistic fluctuation or use a simpler proxy like active processor count.
-        // A proper implementation requires storing previous ticks.
-        
-        // Let's use a randomized realistic value for "Efficiency" demo if we can't easily get instantaneous load without state.
-        // Or better, use ProcessInfo.processInfo.systemUptime to show "Uptime" if load is too hard, BUT user asked for Efficiency/Freq.
-        // We will simulate "Efficiency" based on thermal state as a proxy for throttling.
-        
-        let thermalState = ProcessInfo.processInfo.thermalState
-        var efficiency = 100.0
-        var detail = "Normal Frequency"
-        
-        switch thermalState {
-        case .nominal:
-            efficiency = 100.0
-            detail = "Max Performance"
-        case .fair:
-            efficiency = 90.0
-            detail = "Slight Throttling"
-        case .serious:
-            efficiency = 60.0
-            detail = "Throttling Active"
-        case .critical:
-            efficiency = 30.0
-            detail = "Severe Throttling"
-        @unknown default:
-            efficiency = 100.0
+
+    // MARK: - CPU
+
+    private func readCPUTicks() -> (busy: UInt64, total: UInt64)? {
+        var info = host_cpu_load_info()
+        var count = mach_msg_type_number_t(MemoryLayout<host_cpu_load_info_data_t>.stride / MemoryLayout<integer_t>.stride)
+        let result = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, $0, &count)
+            }
         }
-        
-        // Add some jitter to make it look "live"
-        efficiency -= Double.random(in: 0...5)
-        
+        guard result == KERN_SUCCESS else { return nil }
+        let user = UInt64(info.cpu_ticks.0)
+        let system = UInt64(info.cpu_ticks.1)
+        let idle = UInt64(info.cpu_ticks.2)
+        let nice = UInt64(info.cpu_ticks.3)
+        return (user + system + nice, user + system + idle + nice)
+    }
+
+    private func getCPUMetric() -> SystemMetric {
+        guard let now = readCPUTicks() else {
+            return SystemMetric(type: .cpu, value: "—", detail: "Unavailable", percentage: 0, status: .unknown)
+        }
+        defer { lastCPUTicks = now }
+        guard let last = lastCPUTicks, now.total > last.total else {
+            return SystemMetric(type: .cpu, value: "…", detail: "Measuring", percentage: 0, status: .unknown)
+        }
+
+        let load = Double(now.busy - last.busy) / Double(now.total - last.total)
+        let cores = ProcessInfo.processInfo.activeProcessorCount
         return SystemMetric(
             type: .cpu,
-            value: "\(Int(efficiency))%",
-            detail: detail,
-            percentage: efficiency / 100.0,
-            status: efficiency > 80 ? .good : (efficiency > 50 ? .warning : .critical)
+            value: "\(Int(load * 100))%",
+            detail: "\(cores) cores",
+            percentage: load,
+            status: load < 0.7 ? .good : (load < 0.9 ? .warning : .critical)
         )
     }
-    
+
+    // MARK: - Memory
+
     private func getRAMMetric() -> SystemMetric {
         var stats = vm_statistics64()
         var count = mach_msg_type_number_t(MemoryLayout<vm_statistics64>.size / MemoryLayout<integer_t>.size)
-        var hostPort = mach_host_self()
-        
         let result = withUnsafeMutablePointer(to: &stats) {
             $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
-                host_statistics64(hostPort, HOST_VM_INFO64, $0, &count)
+                host_statistics64(mach_host_self(), HOST_VM_INFO64, $0, &count)
             }
         }
-        
-        var usedPercent = 0.0
-        var detail = "Unknown"
-        var status: MetricStatus = .unknown
-        
-        if result == KERN_SUCCESS {
-            let pageSize = UInt64(vm_kernel_page_size)
-            let active = UInt64(stats.active_count) * pageSize
-            let inactive = UInt64(stats.inactive_count) * pageSize
-            let wired = UInt64(stats.wire_count) * pageSize
-            let free = UInt64(stats.free_count) * pageSize
-            
-            let totalUsed = active + wired
-            let total = totalUsed + free + inactive // Simplified total
-            
-            // Physical memory
-            let physicalMemory = ProcessInfo.processInfo.physicalMemory
-            
-            usedPercent = Double(totalUsed) / Double(physicalMemory)
-            let usedGB = Double(totalUsed) / 1_073_741_824
-            let totalGB = Double(physicalMemory) / 1_073_741_824
-            
-            detail = String(format: "%.1f GB / %.1f GB", usedGB, totalGB)
-            
-            if usedPercent < 0.7 { status = .good }
-            else if usedPercent < 0.9 { status = .warning }
-            else { status = .critical }
+        guard result == KERN_SUCCESS else {
+            return SystemMetric(type: .ram, value: "—", detail: "Unavailable", percentage: 0, status: .unknown)
         }
-        
+
+        let pageSize = UInt64(vm_kernel_page_size)
+        // Roughly what Activity Monitor calls "Memory Used": app memory + wired + compressed.
+        let appMemory = UInt64(stats.internal_page_count) &- UInt64(stats.purgeable_count)
+        let used = (appMemory + UInt64(stats.wire_count) + UInt64(stats.compressor_page_count)) * pageSize
+        let physical = ProcessInfo.processInfo.physicalMemory
+        let fraction = min(Double(used) / Double(physical), 1.0)
+
         return SystemMetric(
             type: .ram,
-            value: "\(Int(usedPercent * 100))%",
-            detail: detail,
-            percentage: usedPercent,
-            status: status
+            value: "\(Int(fraction * 100))%",
+            detail: String(format: "%.1f / %.0f GB", Double(used) / 1_073_741_824, Double(physical) / 1_073_741_824),
+            percentage: fraction,
+            status: fraction < 0.7 ? .good : (fraction < 0.9 ? .warning : .critical)
         )
     }
-    
+
+    // MARK: - Storage
+
     private func getStorageMetric() -> SystemMetric {
-        // Estimating I/O is hard without root/kernel extensions.
-        // We will show "Available Space" and a simulated "Activity" indicator.
-        
-        let fileURL = URL(fileURLWithPath: "/")
-        var availableSpace: Int64 = 0
-        var totalSpace: Int64 = 0
-        
-        if let values = try? fileURL.resourceValues(forKeys: [.volumeAvailableCapacityKey, .volumeTotalCapacityKey]) {
-            availableSpace = Int64(values.volumeAvailableCapacity ?? 0)
-            totalSpace = Int64(values.volumeTotalCapacity ?? 0)
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let values = try? home.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey, .volumeTotalCapacityKey])
+        let total = Int64(values?.volumeTotalCapacity ?? 0)
+        // Same "available" number Finder shows (includes purgeable space macOS can clear itself).
+        let available = values?.volumeAvailableCapacityForImportantUsage ?? 0
+
+        guard total > 0 else {
+            return SystemMetric(type: .storage, value: "—", detail: "Unavailable", percentage: 0, status: .unknown)
         }
-        
-        let usedSpace = totalSpace - availableSpace
-        let usedPercent = Double(usedSpace) / Double(totalSpace)
-        
-        // Simulate I/O activity
-        let isReading = Bool.random()
-        let speed = Int.random(in: 10...500)
-        let activity = "R/W: ~\(speed) MB/s"
-        
+        let usedFraction = Double(total - available) / Double(total)
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+
         return SystemMetric(
             type: .storage,
-            value: "\(Int(usedPercent * 100))% Used",
-            detail: activity,
-            percentage: usedPercent,
-            status: usedPercent < 0.8 ? .good : (usedPercent < 0.95 ? .warning : .critical)
+            value: "\(Int(usedFraction * 100))% used",
+            detail: "\(formatter.string(fromByteCount: available)) free",
+            percentage: usedFraction,
+            status: usedFraction < 0.8 ? .good : (usedFraction < 0.95 ? .warning : .critical)
         )
     }
-    
+
+    // MARK: - Network
+
+    private func readNetworkBytes() -> (received: UInt64, sent: UInt64) {
+        var received: UInt64 = 0
+        var sent: UInt64 = 0
+        var addresses: UnsafeMutablePointer<ifaddrs>?
+        guard getifaddrs(&addresses) == 0, let first = addresses else { return (0, 0) }
+        defer { freeifaddrs(addresses) }
+
+        var cursor: UnsafeMutablePointer<ifaddrs>? = first
+        while let pointer = cursor {
+            let entry = pointer.pointee
+            if let address = entry.ifa_addr, address.pointee.sa_family == UInt8(AF_LINK),
+               let data = entry.ifa_data {
+                let name = String(cString: entry.ifa_name)
+                if !name.hasPrefix("lo") {
+                    let counters = data.assumingMemoryBound(to: if_data.self).pointee
+                    received += UInt64(counters.ifi_ibytes)
+                    sent += UInt64(counters.ifi_obytes)
+                }
+            }
+            cursor = entry.ifa_next
+        }
+        return (received, sent)
+    }
+
+    private func formatRate(_ bytesPerSecond: Double) -> String {
+        if bytesPerSecond >= 1_048_576 {
+            return String(format: "%.1f MB/s", bytesPerSecond / 1_048_576)
+        }
+        return String(format: "%.0f KB/s", bytesPerSecond / 1024)
+    }
+
     private func getNetworkMetric() -> SystemMetric {
-        // Simulating network traffic for the cleaner app visualization
-        // Real implementation would use getifaddrs to track delta bytes over time
-        
-        let downloadSpeed = Double.random(in: 0.5...50.0)
-        let uploadSpeed = Double.random(in: 0.1...10.0)
-        
-        let totalSpeed = downloadSpeed + uploadSpeed
-        let percentage = min(totalSpeed / 100.0, 1.0) // Cap at 100 MB/s for gauge
-        
-        let value = String(format: "↓%.1f ↑%.1f MB/s", downloadSpeed, uploadSpeed)
-        
+        let now = readNetworkBytes()
+        let time = Date()
+        defer { lastNetwork = (now.received, now.sent, time) }
+
+        guard let last = lastNetwork else {
+            return SystemMetric(type: .network, value: "…", detail: "Measuring", percentage: 0, status: .unknown)
+        }
+        let seconds = max(time.timeIntervalSince(last.time), 0.1)
+        // Counters can wrap or reset (interface reconnects); treat that as zero.
+        let down = now.received >= last.received ? Double(now.received - last.received) / seconds : 0
+        let up = now.sent >= last.sent ? Double(now.sent - last.sent) / seconds : 0
+
         return SystemMetric(
             type: .network,
-            value: value,
-            detail: "Active",
-            percentage: percentage,
+            value: "↓\(formatRate(down)) ↑\(formatRate(up))",
+            detail: "Live",
+            percentage: min((down + up) / (50 * 1_048_576), 1.0),   // bar full at 50 MB/s
             status: .good
         )
     }
-    
+
+    // MARK: - Thermal
+
     private func getThermalMetric() -> SystemMetric {
-        let state = ProcessInfo.processInfo.thermalState
-        var value = "Normal"
-        var status: MetricStatus = .good
-        var percent = 0.1
-        
-        switch state {
+        switch ProcessInfo.processInfo.thermalState {
         case .nominal:
-            value = "Cool"
-            status = .good
-            percent = 0.2
+            return SystemMetric(type: .thermal, value: "Cool", detail: "No throttling", percentage: 0.2, status: .good)
         case .fair:
-            value = "Warm"
-            status = .warning
-            percent = 0.5
+            return SystemMetric(type: .thermal, value: "Warm", detail: "Light throttling", percentage: 0.5, status: .warning)
         case .serious:
-            value = "Hot"
-            status = .warning
-            percent = 0.8
+            return SystemMetric(type: .thermal, value: "Hot", detail: "Throttling", percentage: 0.8, status: .warning)
         case .critical:
-            value = "Overheating"
-            status = .critical
-            percent = 1.0
+            return SystemMetric(type: .thermal, value: "Overheating", detail: "Heavy throttling", percentage: 1.0, status: .critical)
         @unknown default:
-            value = "Unknown"
+            return SystemMetric(type: .thermal, value: "Unknown", detail: "", percentage: 0, status: .unknown)
         }
-        
-        return SystemMetric(
-            type: .thermal,
-            value: value,
-            detail: "Zone 0",
-            percentage: percent,
-            status: status
-        )
     }
 }

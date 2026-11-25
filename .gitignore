@@ -1,0 +1,12 @@
+# Build output (rebuilt by package.sh)
+.build/
+
+# macOS / Xcode clutter
+.DS_Store
+xcuserdata/
+
+# Local backup of the pre-fix version
+_backup_before_fixes/
+
+# Used once for the commit message
+COMMIT_MESSAGE.txt

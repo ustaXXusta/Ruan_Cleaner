@@ -2,10 +2,10 @@ import Foundation
 import SwiftUI
 
 enum SystemMetricType: String, CaseIterable, Identifiable {
-    case battery = "Battery Health"
-    case cpu = "CPU Efficiency"
-    case ram = "RAM Performance"
-    case storage = "Storage I/O"
+    case battery = "Battery"
+    case cpu = "CPU Load"
+    case ram = "Memory"
+    case storage = "Storage"
     case network = "Network Usage"
     case thermal = "Thermal Status"
     

@@ -1,259 +1,183 @@
+<p align="center">
+  <img src="ruan_logo.png" alt="RUAN" width="420" />
+</p>
 
-# Ruan Cleaner
-
-A safe, fast, and transparent macOS cleaner that helps you reclaim disk space by finding and removing system junk, caches, logs, duplicates, and temporary files—without ever compromising your system integrity or personal data.
-
----
-
-## Philosophy
-
-Ruan Cleaner was built on three core principles:
-
-### 1. Safety First
-Your Mac should never break because of a cleaner app. Ruan Cleaner implements multiple safety layers:
-- **Dry-run mode** lets you preview exactly what will be deleted before any action is taken
-- **System Integrity Protection (SIP) checks** ensure we never touch protected system files
-- **Dependency validation** prevents removal of files that other applications rely on
-- **Smart filtering** excludes critical system caches and user data from cleanup operations
-
-### 2. Transparency Over Mystery
-You deserve to know what's happening on your computer. Unlike commercial cleaners with hidden algorithms, Ruan Cleaner:
-- Shows you the exact file paths of everything it finds
-- Explains what each type of junk file is and why it's safe to remove
-- Provides detailed scan results with file sizes and categories
-- Never performs any action without your explicit consent
-
-### 3. Privacy & Freedom
-Your data belongs to you, not us:
-- **100% local processing** - nothing leaves your Mac
-- **Zero telemetry** - we don't collect usage data, analytics, or statistics
-- **Open source** - every line of code is available for inspection
-- **Completely free** - no premium tiers, no subscriptions, no ads
+<p align="center"><b>A safe, fast and transparent cleaner for macOS.</b><br/>
+Finds caches, logs, temporary files, old downloads and the leftovers of apps you already deleted, shows you exactly what it found, and removes only what you approve.</p>
 
 ---
 
-## What Ruan Cleaner Does
+## Contents
 
-Ruan Cleaner intelligently identifies and removes various types of unnecessary files that accumulate over time:
-
-### System Junk
-- **Application caches** - Temporary data stored by apps that can be safely regenerated
-- **System logs** - Old diagnostic logs that are no longer needed
-- **Temporary files** - Files in `/tmp`, `/var/tmp`, and user temp directories
-- **Downloaded installers** - DMG files and PKG installers sitting in your Downloads folder
-
-### User Clutter
-- **Duplicate files** - Identical files in different locations wasting space
-- **Old downloads** - Files you downloaded months ago and forgot about
-- **Trash bin** - Files waiting in the Trash to be permanently deleted
-
-### Development Cleanup (Optional)
-- **Xcode derived data** - Build artifacts from iOS/macOS development
-- **Homebrew caches** - Downloaded package archives no longer needed
-- **Node modules** - Cached npm/yarn packages from old projects
-
-### Language Files (Advanced)
-- **Unused localizations** - Remove language files for languages you don't use (requires careful selection)
+- [Install](#install)
+- [First launch](#first-launch)
+- [How to use it](#how-to-use-it)
+- [What it cleans](#what-it-cleans)
+- [Safety](#safety)
+- [Build from source](#build-from-source)
+- [Troubleshooting](#troubleshooting)
+- [FAQ](#faq)
 
 ---
 
-## How It Works
+## Install
 
-Ruan Cleaner uses a three-phase approach to safely clean your Mac:
+**Requirements:** macOS 12 (Monterey) or later. Apple Silicon and Intel are both supported.
 
-### Phase 1: Scanning
-The app performs a comprehensive scan of known junk file locations:
-1. Reads standard system cache directories (`~/Library/Caches`, `/Library/Caches`)
-2. Identifies temporary files in system temp folders
-3. Analyzes file modification dates to find stale data
-4. Calculates the total reclaimable space for each category
+1. Download **`RuanCleanerInstaller.dmg`** from this repository (or build it yourself, see [Build from source](#build-from-source)).
+2. Double-click the DMG.
+3. Drag **Ruan Cleaner** into your **Applications** folder.
+4. Eject the DMG.
 
-### Phase 2: Review
-You get full control over what gets deleted:
-- Browse scan results organized by category
-- View file paths, sizes, and last modified dates
-- Select or deselect specific categories or individual files
-- See the total space you'll recover before proceeding
+## First launch
 
-### Phase 3: Cleanup
-Only after your approval, Ruan Cleaner:
-- Moves selected files to the Trash (not permanent deletion)
-- Provides real-time progress updates
-- Generates a cleanup report showing what was removed
-- Gives you one last chance to restore files from Trash if needed
+Ruan Cleaner is not signed with a paid Apple developer certificate, so macOS asks you to confirm the first time.
 
----
+1. Open **Ruan Cleaner** from Applications. If macOS says it can't be opened, click **Done**.
+2. Open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to Ruan Cleaner. Confirm with your password.
 
-## Installation
+### Give it Full Disk Access (important)
 
-### Prerequisites
-- macOS 12.0 (Monterey) or later
-- Swift 5.5+ (comes with Xcode or Swift toolchain)
+Without this, macOS hides most cache folders from the app. Scans come out small and can stall while macOS waits on permission prompts. The app shows a yellow warning while access is off; click it to jump to the right settings page.
 
-### Quick Install (Recommended)
+1. **System Settings → Privacy & Security → Full Disk Access**
+2. Click **+**, pick **Ruan Cleaner** in Applications, and switch it on.
+3. Quit Ruan Cleaner (**Cmd+Q**) and open it again.
 
-**1. Download or clone this repository**
-```bash
-git clone https://github.com/yourusername/ruan-cleaner.git
-cd ruan-cleaner
-```
-
-**2. Run the automated setup script**
-```bash
-chmod +x setup.sh
-./setup.sh
-```
-
-The setup script will:
-- Verify Swift is installed on your system
-- Download any required dependencies
-- Compile Ruan Cleaner in release mode for optimal performance
-- Place the executable in `.build/release/`
-
-**3. Launch the application**
-```bash
-swift run -c release
-```
-
-Or run the binary directly:
-```bash
-./.build/release/MacCleanerPro
-```
+> **After updating or rebuilding the app**, macOS treats it as a new app and the permission resets.
+> Remove the old Ruan Cleaner entry from the list with **–**, add the new one with **+**, and restart the app.
 
 ---
 
-### Manual Build
+## How to use it
 
-If you prefer to build manually or customize the build process:
+1. **Scan.** Press **SCAN**. All categories are scanned at the same time; the ring shows progress and the status line shows which categories are still running.
+2. **Review.** Press **REVIEW** to see everything that was found:
+   - Categories on the left, with their size. The checkbox selects or deselects a whole category.
+   - Files on the right, grouped by app or folder. Click a group to expand it.
+   - Folders smaller than 5 MB are collected in one **"Small folders under 5 MB"** group to keep the list short.
+   - **COPY PATH** copies a file's or folder's location, so you can check it in Finder.
+3. **Choose.** Uncheck anything you want to keep. **SELECTED** at the bottom shows the total across *all* categories, not just the one on screen.
+4. **Clean.** Press **CLEAN** (dashboard) or **CLEAN SELECTED** (review screen). A confirmation lists exactly what will be removed from each category, and how. Nothing happens until you confirm. Press **STOP** at any time to cancel.
+5. **Check the result.** After cleaning, the app shows what was deleted, what went to the Trash, and how much your free disk space actually changed.
 
-```bash
-# Build in release mode (optimized)
-swift build -c release
-
-# Build in debug mode (with debugging symbols)
-swift build -c debug
-
-# Run tests
-swift test
-
-# Clean build artifacts
-swift package clean
-```
+> **Items moved to the Trash still use space.** Old Downloads and App Leftovers go to the Trash so you can restore them. Empty the Trash to get that space back.
 
 ---
 
-### Creating a Standalone App Bundle
+## What it cleans
 
-To create a double-clickable macOS app:
+| Category | What's in it | Selected by default | Removal |
+|---|---|---|---|
+| **System Caches** | `~/Library/Caches`. Apps rebuild these when needed. | Yes | Deleted |
+| **Application Caches** | Only folders named *Cache*, *Code Cache*, *GPUCache*, *CachedData* and similar inside app data and app containers. Settings, saves and documents are never touched. | Yes | Deleted |
+| **Browser Data** | Cache files of Chrome, Safari, Firefox, Edge, Brave, Opera and Arc. Logins, history and bookmarks are not touched. | Yes | Deleted |
+| **Logs & Crash Reports** | `~/Library/Logs` and crash reports older than one day. | Yes | Deleted |
+| **Temporary Files** | Your temp folder, files older than two days. | Yes | Deleted |
+| **Old Downloads** | Items that landed in Downloads 30+ days ago and haven't been opened since. | **No** | Trash |
+| **App Leftovers** | Settings, caches, containers, saved state and login agents left behind by apps you deleted. | **No** | Trash |
+
+### App Leftovers
+
+Dragging an app to the Trash only removes the app itself. Its data stays in `~/Library`, which is why free space doesn't come back after an uninstall. Ruan Cleaner:
+
+1. builds a list of every app on your Mac: the Applications folders, apps Spotlight knows about anywhere else (external drives, Steam, Setapp…), and apps that are running right now;
+2. checks the places apps keep data: Application Support, Containers, Caches, Preferences, Saved Application State, HTTPStorages, WebKit, Logs and LaunchAgents;
+3. lists anything that belongs to an app that is no longer on the Mac, grouped by app name.
+
+Apple's own folders are never listed. When it can't tell, it assumes the app is still installed, so it may miss some leftovers but won't flag real data. Still, **review this category before selecting it.**
+
+---
+
+## Safety
+
+- **Allow-list, not block-list.** A file can only be removed if it sits in a cache, log or temp folder, in Downloads, or is an app leftover found by the scan. Everything else is refused, whatever the scan found.
+- **Never touched:** Documents, Desktop, Pictures, Movies, Music, iCloud Drive, cloud storage folders, Mail, Messages, Keychains, Preferences of installed apps, iPhone backups, and anything outside your home folder.
+- **Each file appears once.** If a file could fit two categories, it's listed in one only, so unchecking it really unchecks it.
+- **Recent files are skipped.** Logs and temp files that are still being written are left alone.
+- **Checked again at delete time.** Ownership, locks and permissions are checked right before every deletion; refused files are marked with a yellow shield and the reason is shown.
+- **Always asks first.** Every clean shows a confirmation with the full breakdown.
+- **Local only.** No network access, no telemetry, no accounts.
+
+---
+
+## Build from source
+
+You need Xcode or the Xcode Command Line Tools (`xcode-select --install`).
 
 ```bash
-# Build first
-swift build -c release
-
-# Package into .app bundle and DMG installer
-chmod +x package.sh
+git clone https://github.com/ustaXXusta/Ruan_Cleaner.git
+cd Ruan_Cleaner
 ./package.sh
 ```
 
-This creates:
-- `Ruan Cleaner.app` - A standard macOS application bundle
-- `RuanCleanerInstaller.dmg` - A disk image for easy distribution
+`package.sh` builds a release version, creates **`Ruan Cleaner.app`** with its images and icon, signs it for local use, and makes **`RuanCleanerInstaller.dmg`**. Then install it as described in [Install](#install).
 
-You can then drag `Ruan Cleaner.app` to your Applications folder.
+For development:
 
----
-
-## Architecture
-
-Ruan Cleaner is built with modern macOS development practices:
-
-- **Language:** Swift (native performance, memory safety)
-- **UI Framework:** SwiftUI (responsive, native macOS interface)
-- **Design Pattern:** MVVM (Model-View-ViewModel) for clean separation of concerns
-- **Minimum Target:** macOS 12.0 for modern API support
-
-### Project Structure
+```bash
+swift build            # debug build
+swift run              # run without packaging
 ```
-MacCleanerPro/
-├── Sources/
-│   └── MacCleanerPro/
-│       ├── Models/          # Data structures and business logic
-│       ├── ViewModels/      # UI state management
-│       ├── Views/           # SwiftUI interface components
-│       └── Assets/          # Icons, colors, resources
-├── Package.swift            # Swift Package Manager config
-└── setup.sh                 # Automated build script
+
+The logo and app icon are generated by `tools/make_logo.py` (Python 3 + Pillow + NumPy).
+
+### Project layout
+
+```
+Sources/MacCleanerPro/
+├── AppMain.swift
+├── Models/      ScanItem/ScanGroup/ScanResult, categories, app state and totals
+├── Services/    ScannerService, LeftoverFinder, CleanerService, SafetyManager,
+│                PermissionManager, SystemMetricsService
+├── Views/       Dashboard, review screen, matrix background, theme
+└── Assets/      ruan_wordmark.png
+tools/make_logo.py   logo and icon generator
+package.sh           build + .app + DMG
 ```
 
 ---
 
-## Features
+## Troubleshooting
 
-### Core Functionality
-- **Comprehensive Scanning** - Deep analysis of system and user directories
-- **Granular Control** - Choose exactly what to clean by category or individual file
-- **Safety Mechanisms** - Dry-run mode, SIP checks, dependency validation
-- **Real-time Progress** - Live updates during scanning and cleaning operations
+**The scan is very small or seems stuck.**
+Full Disk Access is almost certainly off (yellow warning on the dashboard). Turn it on as described in [First launch](#first-launch) and restart the app. A category that stops responding for 45 seconds is skipped and listed as "Skipped", so a scan can't hang forever.
 
-### User Experience
-- **Modern Dark Mode** - Beautiful interface that adapts to system appearance
-- **Intuitive Navigation** - Simple, clear workflow from scan to cleanup
-- **Detailed Reports** - Know exactly what was removed and how much space was recovered
-- **Fast Performance** - Optimized algorithms for quick scans even on large drives
+**"Ruan Cleaner can't be opened" / "unidentified developer".**
+System Settings → Privacy & Security → **Open Anyway**.
 
-### Privacy & Security
-- **No Network Access** - Everything runs locally on your Mac
-- **No Telemetry** - Zero data collection or analytics
-- **Open Source** - Full code transparency for security audits
-- **Reversible Actions** - Files moved to Trash, not immediately deleted
+**I cleaned, but free space didn't go up as much as expected.**
+- Items in **Old Downloads** and **App Leftovers** are in the Trash. Empty the Trash.
+- Time Machine keeps local snapshots of recently deleted files. macOS removes them on its own after a while, or when space runs low.
+- Some apps (browsers especially) start rebuilding their caches right away.
+
+**Some items show a yellow shield or a red triangle.**
+Yellow: skipped on purpose by the safety check. Red: macOS refused the delete. Hover over the icon to see the reason.
 
 ---
 
-## Frequently Asked Questions
+## FAQ
 
-**Q: Is it safe to use?**  
-A: Yes. Ruan Cleaner only targets genuinely unnecessary files and includes multiple safety checks. It never touches user documents, photos, or essential system files.
+**Is it safe?**
+It only removes files from cache, log and temp folders, your Downloads (to the Trash) and leftovers of deleted apps (to the Trash), and asks before every clean. See [Safety](#safety).
 
-**Q: Will cleaning break my applications?**  
-A: No. Caches and temporary files are designed to be regenerated. Applications may take slightly longer to launch the first time after cleaning, but will rebuild their caches automatically.
+**Will cleaning break my apps?**
+No. Caches and temp files are made to be rebuilt. An app may start a little slower the first time after cleaning.
 
-**Q: How much space can I expect to recover?**  
-A: This varies greatly depending on how long since your last cleanup. Typical users recover 5-20GB, but heavy users might recover 50GB or more.
+**Can I undo a cleanup?**
+Old Downloads and App Leftovers are in the Trash until you empty it. Caches, logs and temp files are deleted for real, since that's the only way to free their space immediately.
 
-**Q: Do I need to run this regularly?**  
-A: Monthly or quarterly cleanups are usually sufficient. Ruan Cleaner is designed for occasional use, not as a constantly-running background process.
-
-**Q: Can I undo a cleanup?**  
-A: Files are moved to Trash, not immediately deleted. You can restore anything from Trash if needed before emptying it.
+**How often should I run it?**
+Once a month is plenty. It doesn't run in the background.
 
 ---
 
 ## Contributing
 
-Ruan Cleaner is open source and welcomes contributions! Whether you want to:
-- Report bugs or suggest features
-- Improve documentation
-- Submit code improvements
-- Translate to other languages
-
-Please feel free to open issues or pull requests on GitHub.
-
----
+Issues and pull requests are welcome: bug reports, feature ideas, translations.
 
 ## License
 
-Ruan Cleaner is free and open source software.
+Free and open source.
 
----
-
-## Support
-
-If you encounter issues:
-1. Check the FAQ section above
-2. Review existing GitHub issues
-3. Open a new issue with details about your system and the problem
-
----
-
-**Made with ❤️ for the macOS community. Keep your Mac clean, safe, and fast.**
-
+<p align="center"><b>Keep your Mac clean, safe and fast.</b></p>

@@ -1,106 +1,82 @@
 import SwiftUI
 
+/// Matrix rain drawn into a single Canvas.
+///
+/// The old version animated ~150 separate Text views with a 20 fps timer and rebuilt an array of
+/// structs every frame, which made the whole window lag. Here every column's position is worked
+/// out from the clock, so there is no per-frame state to update at all.
 struct MatrixRainView: View {
-    @State private var characters: [MatrixCharacter] = []
-    let timer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
-    
+    /// Overall strength of the effect (0...1).
+    var intensity: Double = 0.6
+    var framesPerSecond: Double = 15
+
+    private static let glyphs: [String] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".map { String($0) }
+    private static let columnWidth: CGFloat = 24
+
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                // Black background
-                Color.black
-                
-                // City Background (Bottom Layer)
-                Image("city_wireframe")
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                    .opacity(0.7) // Increased opacity as requested
-                    .blendMode(.screen)
-                
-                // Matrix Rain (Top Layer)
-                ForEach(characters) { char in
-                    Text(char.value)
-                        .font(.system(size: char.size, weight: .bold, design: .monospaced))
-                        .foregroundColor(char.color)
-                        .position(x: char.x, y: char.y)
-                        .opacity(char.opacity)
+        TimelineView(.periodic(from: .now, by: 1.0 / framesPerSecond)) { timeline in
+            Canvas { context, size in
+                let time = timeline.date.timeIntervalSinceReferenceDate
+                let columns = max(Int(size.width / Self.columnWidth), 1)
+
+                for column in 0..<columns {
+                    var random = SeededRandom(seed: UInt64(column + 1) &* 0x9E37_79B9_7F4A_7C15)
+                    // Leave some columns empty so it doesn't look like a wall of text.
+                    if random.next() < 0.35 { continue }
+
+                    let speed = 35 + random.next() * 90                 // points per second
+                    let fontSize = CGFloat(10 + random.next() * 7)
+                    let trail = 5 + Int(random.next() * 9)
+                    let lineHeight = Double(fontSize) * 1.2
+                    let span = Double(size.height) + Double(trail) * lineHeight + 120
+                    let start = random.next() * span
+                    let headY = (time * speed + start).truncatingRemainder(dividingBy: span) - 60
+                    let x = (CGFloat(column) + 0.5) * Self.columnWidth
+
+                    for step in 0..<trail {
+                        let y = headY - Double(step) * lineHeight
+                        if y < -Double(fontSize) || y > Double(size.height) + Double(fontSize) { continue }
+
+                        // Characters flicker a few times per second.
+                        let tick = Int(time * 5) &+ column &* 31 &+ step &* 17
+                        let glyph = Self.glyphs[Int(UInt(bitPattern: tick &* 2_654_435_761) % UInt(Self.glyphs.count))]
+
+                        let fade = 1 - Double(step) / Double(trail)
+                        let color: Color = step == 0
+                            ? Color.white.opacity(0.85 * intensity)
+                            : FuturisticTheme.softRed.opacity(0.7 * fade * intensity)
+
+                        context.draw(
+                            Text(glyph)
+                                .font(.system(size: fontSize, weight: .bold, design: .monospaced))
+                                .foregroundColor(color),
+                            at: CGPoint(x: x, y: CGFloat(y))
+                        )
+                    }
                 }
             }
-            .onReceive(timer) { _ in
-                updateRain(in: geometry.size)
-            }
-            .onAppear {
-                initializeRain(in: geometry.size)
-            }
         }
-        .drawingGroup() // Optimize rendering
+        .background(Color.black)
+        .allowsHitTesting(false)
         .ignoresSafeArea()
     }
-    
-    private func initializeRain(in size: CGSize) {
-        // Create initial drops
-        for _ in 0..<100 {
-            addCharacter(in: size)
-        }
-    }
-    
-    private func updateRain(in size: CGSize) {
-        // Move existing characters down
-        for i in characters.indices {
-            characters[i].y += characters[i].speed
-            
-            // Fade out at bottom
-            if characters[i].y > size.height {
-                characters[i].y = -20
-                characters[i].x = CGFloat.random(in: 0...size.width)
-                characters[i].value = randomMatrixChar()
-            }
-            
-            // Randomly change character
-            if Double.random(in: 0...1) < 0.05 {
-                characters[i].value = randomMatrixChar()
-            }
-        }
-        
-        // Occasionally add new drops if count is low
-        if characters.count < 150 && Double.random(in: 0...1) < 0.3 {
-            addCharacter(in: size)
-        }
-    }
-    
-    private func addCharacter(in size: CGSize) {
-        let char = MatrixCharacter(
-            id: UUID(),
-            x: CGFloat.random(in: 0...size.width),
-            y: CGFloat.random(in: -size.height...0),
-            size: CGFloat.random(in: 10...20),
-            speed: CGFloat.random(in: 5...15),
-            value: randomMatrixChar(),
-            color: FuturisticTheme.softRed, // Changed to Red
-            opacity: Double.random(in: 0.3...1.0)
-        )
-        characters.append(char)
-    }
-    
-    private func randomMatrixChar() -> String {
-        let chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        return String(chars.randomElement() ?? "0")
-    }
 }
 
-struct MatrixCharacter: Identifiable {
-    let id: UUID
-    var x: CGFloat
-    var y: CGFloat
-    let size: CGFloat
-    let speed: CGFloat
-    var value: String
-    var color: Color
-    var opacity: Double
-}
+/// Small deterministic random generator (SplitMix64), so each column keeps its own look.
+struct SeededRandom {
+    private var state: UInt64
 
-// Extension for Matrix Green color if not already defined
-extension FuturisticTheme {
-    static let matrixGreen = Color(red: 0.0, green: 1.0, blue: 0.4)
+    init(seed: UInt64) {
+        state = seed
+    }
+
+    /// A number in 0..<1.
+    mutating func next() -> Double {
+        state &+= 0x9E37_79B9_7F4A_7C15
+        var z = state
+        z = (z ^ (z >> 30)) &* 0xBF58_476D_1CE4_E5B9
+        z = (z ^ (z >> 27)) &* 0x94D0_49BB_1331_11EB
+        z = z ^ (z >> 31)
+        return Double(z >> 11) / Double(1 << 53)
+    }
 }

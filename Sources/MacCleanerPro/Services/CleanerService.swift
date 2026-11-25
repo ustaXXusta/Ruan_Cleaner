@@ -1,232 +1,299 @@
 import Foundation
+import Darwin
 
+/// What a cleanup actually did.
+struct CleanReport {
+    var deletedCount = 0
+    var trashedCount = 0
+    var skippedCount = 0
+    var failedCount = 0
+    /// Bytes removed for good. This space is free right away.
+    var freedBytes: Int64 = 0
+    /// Bytes moved to the Trash. This space only comes back when the Trash is emptied.
+    var trashedBytes: Int64 = 0
+    /// How much the disk's free space really changed, measured before and after.
+    var diskFreeChange: Int64 = 0
+    var wasDryRun = false
+    var wasCancelled = false
+
+    mutating func add(_ other: CleanReport) {
+        deletedCount += other.deletedCount
+        trashedCount += other.trashedCount
+        skippedCount += other.skippedCount
+        failedCount += other.failedCount
+        freedBytes += other.freedBytes
+        trashedBytes += other.trashedBytes
+    }
+}
+
+/// One file to delete, as plain values that are safe to hand to background threads.
+private struct CleanJob {
+    let url: URL
+    let path: String
+    let name: String
+    let size: Int64
+    let permanent: Bool
+    let leftover: Bool
+}
+
+private struct JobResult {
+    var status: ScanItemStatus = .ready
+    var note: String? = nil
+}
+
+/// Progress shared between the deleting threads and the UI.
+private final class CleanTracker: @unchecked Sendable {
+    private let lock = NSLock()
+    private var done = 0
+    private var lastName = ""
+    private var cancelled = false
+
+    func tick(_ name: String) {
+        lock.lock()
+        done += 1
+        lastName = name
+        lock.unlock()
+    }
+
+    var snapshot: (done: Int, name: String) {
+        lock.lock()
+        defer { lock.unlock() }
+        return (done, lastName)
+    }
+
+    func cancel() {
+        lock.lock()
+        cancelled = true
+        lock.unlock()
+    }
+
+    var isCancelled: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return cancelled
+    }
+}
+
+/// Deletes files fast.
+///
+/// Why the old version needed "1h" for 3 GB: after every 25 files the deleting thread stopped and
+/// waited for the main thread to redraw the whole results list (130,000 rows' worth of totals),
+/// so deleting was limited by the UI. Now:
+/// - 4 threads delete in parallel and never wait for the UI,
+/// - the UI reads a progress counter a few times a second,
+/// - the list is updated once, at the end.
 @MainActor
-class CleanerService: ObservableObject {
+final class CleanerService: ObservableObject {
     @Published var isCleaning: Bool = false
     @Published var progress: Double = 0.0
     @Published var estimatedTimeRemaining: TimeInterval = 0
     @Published var filesProcessed: Int = 0
     @Published var totalFiles: Int = 0
     @Published var currentFileName: String = ""
-    
-    private var cleaningTask: Task<Void, Never>?
-    
-    func clean(results: [ScanResult]) async -> Int64 {
-        // Cancel any existing cleaning task
-        cleaningTask?.cancel()
-        
+
+    private var tracker: CleanTracker?
+    private var progressTimer: Timer?
+
+    /// Deletes the given items. Only items that are checked and still on disk are touched,
+    /// and every one goes through SafetyManager first.
+    func clean(items: [ScanItem], dryRun: Bool = false) async -> CleanReport {
+        guard !isCleaning else { return CleanReport(wasDryRun: dryRun) }
+
+        // Snapshot of the work list, taken once, so nothing changes under us mid-run.
+        let work = items.filter { $0.isSelected && $0.isActive }.sorted { $0.size > $1.size }
+        let jobs = work.map {
+            CleanJob(url: $0.url, path: $0.path, name: $0.name, size: $0.size,
+                     permanent: $0.category.deletesPermanently, leftover: $0.category == .appLeftovers)
+        }
+
+        let tracker = CleanTracker()
+        self.tracker = tracker
         isCleaning = true
-        progress = 0.0
+        progress = 0
         filesProcessed = 0
-        
-        var totalCleaned: Int64 = 0
-        
-        // Collect all items to process (selected ones)
-        var allItems: [ScanItem] = []
-        for result in results {
-            let itemsToProcess = result.items.filter { $0.isSelected && $0.status != .deleted }
-            allItems.append(contentsOf: itemsToProcess)
+        totalFiles = jobs.count
+        estimatedTimeRemaining = 0
+        currentFileName = ""
+
+        let startedAt = Date()
+        let freeBefore = Self.freeSpace()
+
+        progressTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in self?.refreshProgress(startedAt: startedAt) }
         }
-        
-        // SORT BY SIZE DESCENDING: Delete biggest files first
-        allItems.sort { $0.size > $1.size }
-        
-        totalFiles = allItems.count
-        let startTime = Date()
-        
-        // ADAPTIVE IO CONFIGURATION
-        let targetLatency: TimeInterval = 0.01 // 10ms target per file
-        var currentSleepInterval: UInt64 = 0 // Nanoseconds
-        let maxSleepInterval: UInt64 = 100_000_000 // 100ms max sleep
-        
-        // Batching for UI
-        let batchSize = 10
-        
-        // Create background task for deletion
-        cleaningTask = Task.detached(priority: .userInitiated) { [weak self] in
-            guard let self = self else { return }
-            
-            let fileManager = FileManager.default
-            var batchCleaned: Int64 = 0
-            var batchProcessedItems: [ScanItem] = []
-            var batchStatusUpdates: [ScanItem: ScanItemStatus] = [:]
-            
-            var batchStartTime = Date()
-            
-            for (index, item) in allItems.enumerated() {
-                // Check for cancellation
-                if Task.isCancelled { break }
-                
-                let opStartTime = Date()
-                var itemStatus: ScanItemStatus = .ready
-                
-                // 1. Safety Check & Deletion
-                // We use a linear flow here: Check -> Delete -> Update. 
-                // No 'return' or 'continue' that skips the batching logic at the bottom.
-                
-                if !SafetyManager.shared.isSafeToDelete(url: item.url) {
-                    itemStatus = .skipped
-                } else {
-                    // Safe to delete - perform IO inside autoreleasepool
-                    autoreleasepool {
-                        do {
-                            if SafetyManager.shared.isDryRun {
-                                // Dry run
-                                batchCleaned += item.size
-                                itemStatus = .deleted
-                            } else {
-                                // Real deletion
-                                try fileManager.trashItem(at: item.url, resultingItemURL: nil)
-                                batchCleaned += item.size
-                                itemStatus = .deleted
-                            }
-                        } catch {
-                            print("⚠️ Failed to delete \(item.path): \(error.localizedDescription)")
-                            itemStatus = .error
-                        }
-                    }
-                }
-                
-                // 2. Update Batch State
-                batchStatusUpdates[item] = itemStatus
-                batchProcessedItems.append(item)
-                
-                // 3. Adaptive Throttling Logic (only throttle if we actually did IO)
-                if itemStatus == .deleted || itemStatus == .error {
-                    let opDuration = Date().timeIntervalSince(opStartTime)
-                    
-                    // If operation was too slow, increase sleep
-                    if opDuration > targetLatency {
-                        currentSleepInterval = min(currentSleepInterval + 1_000_000, maxSleepInterval) // +1ms
-                    } else if opDuration < targetLatency / 2 && currentSleepInterval > 0 {
-                        // If operation was very fast, decrease sleep
-                        currentSleepInterval = max(currentSleepInterval - 500_000, 0) // -0.5ms
-                    }
-                    
-                    // Apply throttle if needed
-                    if currentSleepInterval > 0 {
-                        try? await Task.sleep(nanoseconds: currentSleepInterval)
-                    }
-                }
-                
-                // 4. Batched UI Updates
-                // This block MUST be reached for every item to ensure progress updates
-                let isLastItem = (index == allItems.count - 1)
-                let shouldUpdate = ((index + 1) % batchSize == 0) || isLastItem
-                
-                if shouldUpdate {
-                    let currentIndex = index + 1
-                    let currentBatchCleaned = batchCleaned
-                    let currentBatchUpdates = batchStatusUpdates
-                    let currentBatchItems = batchProcessedItems
-                    
-                    // Update UI on main thread
-                    await MainActor.run {
-                        totalCleaned += currentBatchCleaned
-                        self.filesProcessed = currentIndex
-                        self.progress = Double(currentIndex) / Double(self.totalFiles)
-                        
-                        // Apply status updates
-                        for (item, status) in currentBatchUpdates {
-                            item.status = status
-                        }
-                        
-                        // Calculate ETA
-                        let elapsed = Date().timeIntervalSince(startTime)
-                        if self.filesProcessed > 0 {
-                            let avgTimePerFile = elapsed / Double(self.filesProcessed)
-                            let filesRemaining = Double(self.totalFiles - self.filesProcessed)
-                            self.estimatedTimeRemaining = avgTimePerFile * filesRemaining
-                        }
-                        
-                        // Update current file name
-                        if let lastItem = currentBatchItems.last {
-                            self.currentFileName = lastItem.name
-                        }
-                    }
-                    
-                    // Reset batch
-                    batchCleaned = 0
-                    batchProcessedItems.removeAll()
-                    batchStatusUpdates.removeAll()
-                    batchStartTime = Date()
-                }
-            }
-            
-            // 5. Verification & Retry Loop
-            // User requested: "check mechanism that runs the cleaning algorithm till all files deleted and recusively check"
-            
-            let maxRetries = 3
-            var retryCount = 0
-            var itemsToVerify = allItems.filter { $0.status == .deleted }
-            
-            while retryCount < maxRetries && !itemsToVerify.isEmpty {
-                retryCount += 1
-                
-                await MainActor.run {
-                    self.currentFileName = "Verifying deletion (Attempt \(retryCount)/\(maxRetries))..."
-                }
-                
-                var stillExistingItems: [ScanItem] = []
-                
-                for item in itemsToVerify {
-                    if Task.isCancelled { break }
-                    
-                    // Check if file still exists
-                    if fileManager.fileExists(atPath: item.path) {
-                        // Try to delete again
-                        autoreleasepool {
-                            do {
-                                print("🔄 Retry deleting: \(item.path)")
-                                try fileManager.trashItem(at: item.url, resultingItemURL: nil)
-                            } catch {
-                                print("⚠️ Retry failed for \(item.path): \(error.localizedDescription)")
-                            }
-                        }
-                        
-                        // Check again immediately
-                        if fileManager.fileExists(atPath: item.path) {
-                            stillExistingItems.append(item)
-                        }
-                    }
-                }
-                
-                itemsToVerify = stillExistingItems
-                
-                // Small delay between retries if needed
-                if !itemsToVerify.isEmpty {
-                    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s delay
-                }
-            }
-            
-            // Mark any remaining items as error
-            if !itemsToVerify.isEmpty {
-                await MainActor.run {
-                    for item in itemsToVerify {
-                        item.status = .error
-                    }
-                }
-            }
-            
-            // Final cleanup
-            await MainActor.run {
-                self.isCleaning = false
-                self.progress = 1.0
-                self.estimatedTimeRemaining = 0
-                self.currentFileName = ""
+
+        let outcome: (results: [JobResult], report: CleanReport) = await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                continuation.resume(returning: CleanerService.run(jobs, dryRun: dryRun, tracker: tracker))
             }
         }
-        
-        await cleaningTask?.value
-        
-        return totalCleaned
-    }
-    
-    func cancelCleaning() {
-        cleaningTask?.cancel()
+
+        progressTimer?.invalidate()
+        progressTimer = nil
+
+        // Update the list once, with change notifications muted, then announce one change.
+        ScanItem.muteChanges = true
+        for (index, item) in work.enumerated() where outcome.results[index].status != .ready {
+            item.status = outcome.results[index].status
+            item.note = outcome.results[index].note
+        }
+        ScanItem.muteChanges = false
+        ScanItem.changed.send()
+
+        var report = outcome.report
+        report.wasCancelled = tracker.isCancelled
+        if !dryRun {
+            // Give APFS a moment to update its counters, then measure the real change.
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            report.diskFreeChange = Self.freeSpace() - freeBefore
+        }
+
+        self.tracker = nil
+        filesProcessed = tracker.snapshot.done
         isCleaning = false
+        progress = 1.0
+        estimatedTimeRemaining = 0
+        currentFileName = ""
+        return report
     }
-    
+
+    func cancelCleaning() {
+        tracker?.cancel()
+    }
+
+    private func refreshProgress(startedAt: Date) {
+        guard let tracker, totalFiles > 0 else { return }
+        let snapshot = tracker.snapshot
+        filesProcessed = snapshot.done
+        progress = Double(snapshot.done) / Double(totalFiles)
+        currentFileName = snapshot.name
+
+        let elapsed = Date().timeIntervalSince(startedAt)
+        // Wait for a few hundred files before guessing, or the first slow files skew the estimate.
+        if snapshot.done >= 300 && elapsed > 0.5 {
+            let rate = Double(snapshot.done) / elapsed
+            estimatedTimeRemaining = Double(totalFiles - snapshot.done) / rate
+        } else {
+            estimatedTimeRemaining = 0
+        }
+    }
+
+    // MARK: - Background work
+
+    nonisolated private static func run(_ jobs: [CleanJob], dryRun: Bool, tracker: CleanTracker) -> (results: [JobResult], report: CleanReport) {
+        let workers = max(1, min(4, jobs.count))
+        var results = [JobResult](repeating: JobResult(), count: jobs.count)
+        var reports = [CleanReport](repeating: CleanReport(wasDryRun: dryRun), count: workers)
+
+        results.withUnsafeMutableBufferPointer { resultPointer in
+            reports.withUnsafeMutableBufferPointer { reportPointer in
+                let resultBuffer = resultPointer
+                let reportBuffer = reportPointer
+                // Each worker takes every 4th file, so big and small files are spread evenly.
+                // Workers write to different slots, so no locking is needed.
+                DispatchQueue.concurrentPerform(iterations: workers) { worker in
+                    var report = CleanReport(wasDryRun: dryRun)
+                    var index = worker
+                    while index < jobs.count {
+                        if tracker.isCancelled { break }
+                        let job = jobs[index]
+                        resultBuffer[index] = process(job, dryRun: dryRun, report: &report)
+                        tracker.tick(job.name)
+                        index += workers
+                    }
+                    reportBuffer[worker] = report
+                }
+            }
+        }
+
+        var total = CleanReport(wasDryRun: dryRun)
+        for report in reports { total.add(report) }
+        return (results, total)
+    }
+
+    nonisolated private static func process(_ job: CleanJob, dryRun: Bool, report: inout CleanReport) -> JobResult {
+        // Already gone (apps clear their own caches too): nothing to do, nothing to count.
+        var info = stat()
+        if lstat(job.path, &info) != 0 {
+            return JobResult(status: .deleted, note: "Already removed")
+        }
+
+        if let reason = SafetyManager.shared.check(job.url) {
+            report.skippedCount += 1
+            return JobResult(status: .skipped, note: reason)
+        }
+
+        if dryRun {
+            report.deletedCount += 1
+            report.freedBytes += job.size
+            return JobResult(status: .deleted)
+        }
+
+        do {
+            try remove(job)
+        } catch {
+            // App containers carry a "deny delete" permission flag (ACL). For a deleted app's
+            // leftovers, clear that flag and try once more.
+            if job.leftover && clearACLs(job.path) {
+                do {
+                    try remove(job)
+                } catch {
+                    report.failedCount += 1
+                    return JobResult(status: .error, note: error.localizedDescription)
+                }
+            } else {
+                report.failedCount += 1
+                return JobResult(status: .error, note: error.localizedDescription)
+            }
+        }
+
+        if job.permanent {
+            report.deletedCount += 1
+            report.freedBytes += job.size
+        } else {
+            report.trashedCount += 1
+            report.trashedBytes += job.size
+        }
+        return JobResult(status: .deleted)
+    }
+
+    nonisolated private static func remove(_ job: CleanJob) throws {
+        if job.permanent {
+            // Caches/logs/temp are deleted for real; moving them to the Trash frees nothing.
+            try FileManager.default.removeItem(at: job.url)
+        } else {
+            try FileManager.default.trashItem(at: job.url, resultingItemURL: nil)
+        }
+    }
+
+    /// Runs `chmod -RN` (remove ACLs) on one leftover folder. Returns true if it succeeded.
+    nonisolated private static func clearACLs(_ path: String) -> Bool {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/chmod")
+        process.arguments = ["-RN", path]
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        let finished = DispatchSemaphore(value: 0)
+        process.terminationHandler = { _ in finished.signal() }
+        do {
+            try process.run()
+        } catch {
+            return false
+        }
+        if finished.wait(timeout: .now() + 15) == .timedOut {
+            process.terminate()
+            return false
+        }
+        return process.terminationStatus == 0
+    }
+
+    /// Free space on the startup disk, in bytes.
+    nonisolated static func freeSpace() -> Int64 {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let values = try? home.resourceValues(forKeys: [.volumeAvailableCapacityKey])
+        return Int64(values?.volumeAvailableCapacity ?? 0)
+    }
+
     func formatTimeRemaining(_ seconds: TimeInterval) -> String {
         if seconds < 60 {
             return "\(Int(seconds))s"
